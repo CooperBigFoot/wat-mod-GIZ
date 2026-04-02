@@ -6,6 +6,7 @@ The shared package surface should stay small:
 
 ```python
 from wat_mod_giz import Catchment, Forcing, ModelOutput, PrecipGradientType, Resolution
+from wat_mod_giz import StreamflowSeries
 ```
 
 Model-specific imports should come from `wat_mod_giz.models`:
@@ -18,8 +19,9 @@ from wat_mod_giz.models.gr6j_cemaneige_glacier import Parameters, State, run, st
 
 ## User-Facing Direction
 
-- The API is array-first, not DataFrame-first.
+- The API uses validated typed containers, not DataFrame-first inputs.
 - Shared contracts live in `forcing.py`, `types.py`, and `outputs.py`.
+- Shared time-series contracts live in `forcing.py` and `streamflow.py`.
 - Pure process math lives under `processes/`.
 - End users should mostly interact with `models/...py`.
 
@@ -31,6 +33,7 @@ The common flow is:
 2. Build a `Catchment` with only the metadata required by the chosen model.
 3. Instantiate the model-specific `Parameters`.
 4. Call `run(...)` for a full simulation or `step(...)` for a single timestep.
+5. For calibration, build a `StreamflowSeries` aligned to the post-warmup period and pass it to `calibrate(...)`.
 
 Illustrative shape:
 

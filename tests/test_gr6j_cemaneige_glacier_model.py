@@ -32,16 +32,22 @@ def forcing_with_temp() -> Forcing:
 
 
 class TestRun:
-    def test_returns_model_output(self, typical_params: Parameters, glacier_catchment: Catchment, forcing_with_temp: Forcing) -> None:
+    def test_returns_model_output(
+        self, typical_params: Parameters, glacier_catchment: Catchment, forcing_with_temp: Forcing
+    ) -> None:
         result = run(typical_params, forcing_with_temp, catchment=glacier_catchment)
         assert isinstance(result, ModelOutput)
         assert isinstance(result.fluxes, GR6JCemaNeigeGlacierFluxes)
 
-    def test_glacier_melt_non_negative(self, typical_params: Parameters, glacier_catchment: Catchment, forcing_with_temp: Forcing) -> None:
+    def test_glacier_melt_non_negative(
+        self, typical_params: Parameters, glacier_catchment: Catchment, forcing_with_temp: Forcing
+    ) -> None:
         result = run(typical_params, forcing_with_temp, catchment=glacier_catchment)
         assert np.all(result.fluxes.glacier_melt >= 0.0)
 
-    def test_warm_temperatures_produce_glacier_melt(self, typical_params: Parameters, glacier_catchment: Catchment) -> None:
+    def test_warm_temperatures_produce_glacier_melt(
+        self, typical_params: Parameters, glacier_catchment: Catchment
+    ) -> None:
         forcing = Forcing(
             time=np.arange("2020-07-01", "2020-07-06", dtype="datetime64[D]"),
             precip=np.zeros(5),
@@ -51,7 +57,9 @@ class TestRun:
         result = run(typical_params, forcing, catchment=glacier_catchment)
         assert result.fluxes.glacier_melt.sum() > 0.0
 
-    def test_without_glacier_fractions_matches_cemaneige(self, typical_params: Parameters, forcing_with_temp: Forcing) -> None:
+    def test_without_glacier_fractions_matches_cemaneige(
+        self, typical_params: Parameters, forcing_with_temp: Forcing
+    ) -> None:
         catchment = Catchment(mean_annual_solid_precip=150.0)
         glacier_result = run(typical_params, forcing_with_temp, catchment=catchment)
         base_params = gr6j_cemaneige.Parameters(

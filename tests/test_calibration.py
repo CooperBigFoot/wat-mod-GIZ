@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from wat_mod_giz import StreamflowSeries
 from wat_mod_giz.calibration.engine import CalibrationSpec, _validate_bounds
 from wat_mod_giz.calibration.metrics import nse
 from wat_mod_giz.calibration.types import CalibrationResult
@@ -40,8 +41,11 @@ def glacier_catchment() -> Catchment:
     return Catchment(mean_annual_solid_precip=150.0, glacier_fractions=np.array([0.25]))
 
 
-def _synthetic_observed(output_streamflow: np.ndarray, warmup: int) -> np.ndarray:
-    return output_streamflow[warmup:].copy()
+def _synthetic_observed(forcing: Forcing, output_streamflow: np.ndarray, warmup: int) -> StreamflowSeries:
+    return StreamflowSeries(
+        time=forcing.time[warmup:],
+        streamflow=output_streamflow[warmup:].copy(),
+    )
 
 
 class TestValidateBounds:
@@ -71,11 +75,11 @@ class TestGR6JCalibration:
     def test_returns_typed_result_and_respects_bounds(self, gr6j_forcing: Forcing) -> None:
         warmup = 5
         true_params = gr6j.Parameters(x1=350.0, x2=0.0, x3=90.0, x4=1.7, x5=0.0, x6=5.0)
-        observed = _synthetic_observed(gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
+        observed = _synthetic_observed(gr6j_forcing, gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
 
         result = gr6j.calibrate(
             forcing=gr6j_forcing,
-            observed_streamflow=observed,
+            observed=observed,
             warmup=warmup,
             population_size=10,
             generations=3,
@@ -88,7 +92,7 @@ class TestGR6JCalibration:
         assert isinstance(result.parameters, gr6j.Parameters)
         assert result.objective == "nse"
         assert result.output.streamflow.shape == gr6j_forcing.precip.shape
-        assert result.score["nse"] == pytest.approx(nse(observed, result.output.streamflow[warmup:]))
+        assert result.score["nse"] == pytest.approx(nse(observed.streamflow, result.output.streamflow[warmup:]))
         params_array = np.asarray(result.parameters)
         lower = np.array([gr6j.DEFAULT_BOUNDS[name][0] for name in gr6j.PARAM_NAMES])
         upper = np.array([gr6j.DEFAULT_BOUNDS[name][1] for name in gr6j.PARAM_NAMES])
@@ -100,11 +104,11 @@ class TestGR6JCalibration:
     def test_same_seed_is_reproducible(self, gr6j_forcing: Forcing) -> None:
         warmup = 5
         true_params = gr6j.Parameters(x1=320.0, x2=0.2, x3=95.0, x4=1.9, x5=-0.2, x6=4.5)
-        observed = _synthetic_observed(gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
+        observed = _synthetic_observed(gr6j_forcing, gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
 
         kwargs = {
             "forcing": gr6j_forcing,
-            "observed_streamflow": observed,
+            "observed": observed,
             "warmup": warmup,
             "population_size": 10,
             "generations": 3,
@@ -120,11 +124,11 @@ class TestGR6JCalibration:
     def test_progress_flag_does_not_change_result(self, gr6j_forcing: Forcing) -> None:
         warmup = 5
         true_params = gr6j.Parameters(x1=320.0, x2=0.2, x3=95.0, x4=1.9, x5=-0.2, x6=4.5)
-        observed = _synthetic_observed(gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
+        observed = _synthetic_observed(gr6j_forcing, gr6j.run(true_params, gr6j_forcing).streamflow, warmup)
 
         result_with_progress = gr6j.calibrate(
             forcing=gr6j_forcing,
-            observed_streamflow=observed,
+            observed=observed,
             warmup=warmup,
             population_size=10,
             generations=3,
@@ -133,7 +137,7 @@ class TestGR6JCalibration:
         )
         result_without_progress = gr6j.calibrate(
             forcing=gr6j_forcing,
-            observed_streamflow=observed,
+            observed=observed,
             warmup=warmup,
             population_size=10,
             generations=3,
@@ -146,14 +150,87 @@ class TestGR6JCalibration:
         )
         assert result_with_progress.score == result_without_progress.score
 
+    def test_warmup_must_be_non_negative(self, gr6j_forcing: Forcing) -> None:
+        observed = StreamflowSeries(
+            time=gr6j_forcing.time,
+            streamflow=np.ones(len(gr6j_forcing), dtype=np.float64),
+        )
+
+        with pytest.raises(ValueError, match="warmup must be non-negative"):
+            gr6j.calibrate(
+                forcing=gr6j_forcing,
+                observed=observed,
+                warmup=-1,
+                population_size=10,
+                generations=3,
+                seed=42,
+                progress=False,
+            )
+
+    def test_warmup_must_be_smaller_than_forcing_length(self, gr6j_forcing: Forcing) -> None:
+        observed = StreamflowSeries(
+            time=np.array([], dtype="datetime64[D]"),
+            streamflow=np.array([], dtype=np.float64),
+        )
+
+        with pytest.raises(ValueError, match="must be smaller than forcing length"):
+            gr6j.calibrate(
+                forcing=gr6j_forcing,
+                observed=observed,
+                warmup=len(gr6j_forcing),
+                population_size=10,
+                generations=3,
+                seed=42,
+                progress=False,
+            )
+
+    def test_observed_time_must_match_forcing_after_warmup(self, gr6j_forcing: Forcing) -> None:
+        warmup = 5
+        observed = StreamflowSeries(
+            time=gr6j_forcing.time[warmup:] + np.timedelta64(1, "D"),
+            streamflow=np.ones(len(gr6j_forcing) - warmup, dtype=np.float64),
+        )
+
+        with pytest.raises(ValueError, match="observed time must match forcing time after warmup"):
+            gr6j.calibrate(
+                forcing=gr6j_forcing,
+                observed=observed,
+                warmup=warmup,
+                population_size=10,
+                generations=3,
+                seed=42,
+                progress=False,
+            )
+
+    def test_observed_length_must_match_forcing_after_warmup(self, gr6j_forcing: Forcing) -> None:
+        warmup = 5
+        observed = StreamflowSeries(
+            time=gr6j_forcing.time[warmup:-1],
+            streamflow=np.ones(len(gr6j_forcing) - warmup - 1, dtype=np.float64),
+        )
+
+        with pytest.raises(ValueError, match="observed streamflow length"):
+            gr6j.calibrate(
+                forcing=gr6j_forcing,
+                observed=observed,
+                warmup=warmup,
+                population_size=10,
+                generations=3,
+                seed=42,
+                progress=False,
+            )
+
 
 class TestSnowAndGlacierCalibration:
     def test_cemaneige_requires_temperature(self, gr6j_forcing: Forcing, snow_catchment: Catchment) -> None:
-        observed = np.ones(len(gr6j_forcing) - 5, dtype=np.float64)
+        observed = StreamflowSeries(
+            time=gr6j_forcing.time[5:],
+            streamflow=np.ones(len(gr6j_forcing) - 5, dtype=np.float64),
+        )
         with pytest.raises(ValueError, match="Temperature is required"):
             gr6j_cemaneige.calibrate(
                 forcing=gr6j_forcing,
-                observed_streamflow=observed,
+                observed=observed,
                 catchment=snow_catchment,
                 warmup=5,
                 population_size=10,
@@ -166,13 +243,14 @@ class TestSnowAndGlacierCalibration:
         warmup = 5
         true_params = gr6j_cemaneige.Parameters(x1=350.0, x2=0.0, x3=90.0, x4=1.7, x5=0.0, x6=5.0, ctg=0.97, kf=2.5)
         observed = _synthetic_observed(
+            snow_forcing,
             gr6j_cemaneige.run(true_params, snow_forcing, catchment=snow_catchment).streamflow,
             warmup,
         )
 
         result = gr6j_cemaneige.calibrate(
             forcing=snow_forcing,
-            observed_streamflow=observed,
+            observed=observed,
             catchment=snow_catchment,
             warmup=warmup,
             population_size=10,
@@ -200,13 +278,14 @@ class TestSnowAndGlacierCalibration:
             swe_th=10.0,
         )
         observed = _synthetic_observed(
+            snow_forcing,
             gr6j_cemaneige_glacier.run(true_params, snow_forcing, catchment=glacier_catchment).streamflow,
             warmup,
         )
 
         result = gr6j_cemaneige_glacier.calibrate(
             forcing=snow_forcing,
-            observed_streamflow=observed,
+            observed=observed,
             catchment=glacier_catchment,
             warmup=warmup,
             population_size=10,

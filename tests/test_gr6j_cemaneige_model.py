@@ -54,7 +54,9 @@ class TestRunWithSnow:
         assert result.snow.snow_pack[-1] > result.snow.snow_pack[0]
         np.testing.assert_allclose(result.snow.snow_psol, forcing.precip)
 
-    def test_custom_initial_state_changes_snow_result(self, typical_params: Parameters, forcing_with_temp: Forcing) -> None:
+    def test_custom_initial_state_changes_snow_result(
+        self, typical_params: Parameters, forcing_with_temp: Forcing
+    ) -> None:
         catchment = Catchment(mean_annual_solid_precip=150.0)
         custom_state = State.initialize(typical_params, catchment)
         custom_state.snow_layer_states[0, 0] = 100.0
@@ -68,7 +70,9 @@ class TestRunWithSnow:
 
 
 class TestRunWithMultiLayerSnow:
-    def test_multi_layer_run_populates_snow_layers(self, typical_params: Parameters, forcing_with_temp: Forcing) -> None:
+    def test_multi_layer_run_populates_snow_layers(
+        self, typical_params: Parameters, forcing_with_temp: Forcing
+    ) -> None:
         catchment = Catchment(
             mean_annual_solid_precip=150.0,
             n_layers=3,

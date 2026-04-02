@@ -31,6 +31,7 @@ from wat_mod_giz.models.gr6j_cemaneige import (
 from wat_mod_giz.models.gr6j_cemaneige import Parameters as CemaNeigeParameters
 from wat_mod_giz.outputs import ModelOutput, SnowLayerOutputs, SnowOutput
 from wat_mod_giz.processes.glacier import compute_ice_melt, compute_layer_glacier_melt
+from wat_mod_giz.streamflow import StreamflowSeries
 from wat_mod_giz.types import Catchment
 from wat_mod_giz.unit_hydrographs import compute_uh_ordinates
 
@@ -424,9 +425,8 @@ def run(
 def calibrate(
     *,
     forcing: Forcing,
-    observed_streamflow: np.ndarray,
+    observed: StreamflowSeries,
     catchment: Catchment,
-    observed_time: np.ndarray | None = None,
     bounds: dict[str, tuple[float, float]] | None = None,
     use_default_bounds: bool = True,
     objective: ObjectiveName = "nse",
@@ -453,8 +453,7 @@ def calibrate(
     return calibrate_model(
         spec=spec,
         forcing=forcing,
-        observed_streamflow=observed_streamflow,
-        observed_time=observed_time,
+        observed=observed,
         objective=objective,
         bounds=bounds,
         use_default_bounds=use_default_bounds,

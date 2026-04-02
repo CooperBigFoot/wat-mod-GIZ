@@ -32,6 +32,7 @@ from wat_mod_giz.processes.cemaneige import (
     partition_precipitation,
     update_thermal_state,
 )
+from wat_mod_giz.streamflow import StreamflowSeries
 from wat_mod_giz.types import Catchment, PrecipGradientType
 from wat_mod_giz.unit_hydrographs import compute_uh_ordinates
 
@@ -456,9 +457,8 @@ def run(
 def calibrate(
     *,
     forcing: Forcing,
-    observed_streamflow: np.ndarray,
+    observed: StreamflowSeries,
     catchment: Catchment,
-    observed_time: np.ndarray | None = None,
     bounds: dict[str, tuple[float, float]] | None = None,
     use_default_bounds: bool = True,
     objective: ObjectiveName = "nse",
@@ -485,8 +485,7 @@ def calibrate(
     return calibrate_model(
         spec=spec,
         forcing=forcing,
-        observed_streamflow=observed_streamflow,
-        observed_time=observed_time,
+        observed=observed,
         objective=objective,
         bounds=bounds,
         use_default_bounds=use_default_bounds,

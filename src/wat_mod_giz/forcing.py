@@ -22,8 +22,7 @@ def validate_time_spacing(time: np.ndarray, resolution: Resolution) -> None:
     min_hours, max_hours = _RESOLUTION_TOLERANCES[resolution]
     if not (min_hours <= median_gap_hours <= max_hours):
         raise ValueError(
-            f"time spacing (median {median_gap_hours:.1f} hours) does not match "
-            f"resolution '{resolution.value}'"
+            f"time spacing (median {median_gap_hours:.1f} hours) does not match resolution '{resolution.value}'"
         )
 
 

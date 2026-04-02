@@ -2,12 +2,13 @@
 
 ## API Direction
 
-`wat-mod-GIZ` will expose an array-first API. It should feel simpler than
+`wat-mod-GIZ` will expose a typed-container API. It should feel simpler than
 `pydrology`, but it should not switch to a DataFrame-first interface.
 
 The stable user-facing concepts are:
 
 - forcing containers for `time`, `precip`, `pet`, and optional `temp`
+- streamflow containers for observed discharge series
 - catchment metadata needed for snow and glacier behavior
 - parameter dataclasses with source-model parameter names
 - mutable state dataclasses for stepwise execution

@@ -84,12 +84,21 @@ print(result.snow)
 ## Calibration
 
 ```python
+import numpy as np
+
+from wat_mod_giz import StreamflowSeries
 from wat_mod_giz.models.gr6j import calibrate
+
+warmup = 365
+observed = StreamflowSeries(
+    time=forcing.time[warmup:],
+    streamflow=np.array([...], dtype=np.float64),
+)
 
 result = calibrate(
     forcing=forcing,
-    observed_streamflow=observed_streamflow,
-    warmup=365,
+    observed=observed,
+    warmup=warmup,
     use_default_bounds=True,
     objective="nse",
     seed=42,
@@ -99,6 +108,8 @@ print(result.parameters)
 print(result.score)
 print(result.output.streamflow)
 ```
+
+`observed` should contain the observed discharge values after the warmup period, with `observed.time` matching `forcing.time[warmup:]` exactly.
 
 ## Development
 
@@ -130,4 +141,4 @@ uv run ruff format
 
 - Time series are daily.
 - Multi-layer snow and glacier runs use catchment hypsometry plus forcing input elevation.
-- Calibration is model-local and array-first, with `ctrl-freak` kept behind thin wrappers.
+- Calibration is model-local, with `ctrl-freak` kept behind thin wrappers and validated typed inputs exposed to users.

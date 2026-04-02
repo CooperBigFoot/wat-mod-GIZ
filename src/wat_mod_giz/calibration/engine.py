@@ -12,6 +12,7 @@ import numpy as np
 from wat_mod_giz.calibration.metrics import get_metric
 from wat_mod_giz.calibration.types import CalibrationDiagnostics, CalibrationResult, ObjectiveName
 from wat_mod_giz.forcing import Forcing
+from wat_mod_giz.streamflow import StreamflowSeries
 
 _LARGE_PENALTY: float = 1.0e12
 
@@ -50,40 +51,25 @@ def _validate_bounds(
 
 def _validate_observed(
     forcing: Forcing,
-    observed_streamflow: np.ndarray,
+    observed: StreamflowSeries,
     warmup: int,
-    observed_time: np.ndarray | None,
 ) -> np.ndarray:
     if warmup < 0:
         raise ValueError(f"warmup must be non-negative, got {warmup}")
     if warmup >= len(forcing):
         raise ValueError(f"warmup {warmup} must be smaller than forcing length {len(forcing)}")
 
-    observed = np.asarray(observed_streamflow, dtype=np.float64)
-    if observed.ndim != 1:
-        raise ValueError(f"observed_streamflow must be 1D, got {observed.ndim}D")
-    if np.any(np.isnan(observed)):
-        raise ValueError("observed_streamflow contains NaN values")
-
     expected_length = len(forcing) - warmup
     if len(observed) != expected_length:
         raise ValueError(
-            f"observed_streamflow length {len(observed)} must equal forcing length {len(forcing)} minus warmup {warmup}"
+            f"observed streamflow length {len(observed)} must equal forcing length {len(forcing)} minus warmup {warmup}"
         )
 
-    if observed_time is not None:
-        obs_time = np.asarray(observed_time).astype("datetime64[ns]")
-        if obs_time.ndim != 1:
-            raise ValueError(f"observed_time must be 1D, got {obs_time.ndim}D")
-        if len(obs_time) != len(observed):
-            raise ValueError(
-                f"observed_time length {len(obs_time)} does not match observed_streamflow length {len(observed)}"
-            )
-        expected_time = forcing.time[warmup:]
-        if not np.array_equal(obs_time, expected_time):
-            raise ValueError("observed_time must match forcing time after warmup")
+    expected_time = forcing.time[warmup:]
+    if not np.array_equal(observed.time, expected_time):
+        raise ValueError("observed time must match forcing time after warmup")
 
-    return observed
+    return observed.streamflow
 
 
 def _to_optimizer_value(score: float, direction: str) -> float:
@@ -104,8 +90,7 @@ def calibrate_model(
     *,
     spec: CalibrationSpec,
     forcing: Forcing,
-    observed_streamflow: np.ndarray,
-    observed_time: np.ndarray | None,
+    observed: StreamflowSeries,
     objective: ObjectiveName,
     bounds: dict[str, tuple[float, float]] | None,
     use_default_bounds: bool,
@@ -125,7 +110,7 @@ def calibrate_model(
     except ImportError as exc:
         raise ImportError("Calibration requires ctrl-freak. Run `uv sync` to install local dependencies.") from exc
 
-    observed = _validate_observed(forcing, observed_streamflow, warmup, observed_time)
+    observed_streamflow = _validate_observed(forcing, observed, warmup)
     resolved_bounds = _validate_bounds(bounds, use_default_bounds, spec)
     metric, direction = get_metric(objective)
 
@@ -149,7 +134,7 @@ def calibrate_model(
         if catchment is not None:
             run_kwargs["catchment"] = catchment
         output = spec.run_model(**run_kwargs)
-        score = metric(observed, output.streamflow[warmup:])
+        score = metric(observed_streamflow, output.streamflow[warmup:])
         return _to_optimizer_value(score, direction)
 
     def callback(result: Any, generation: int) -> bool:
@@ -186,7 +171,7 @@ def calibrate_model(
     if catchment is not None:
         best_output_kwargs["catchment"] = catchment
     best_output = spec.run_model(**best_output_kwargs)
-    best_score = metric(observed, best_output.streamflow[warmup:])
+    best_score = metric(observed_streamflow, best_output.streamflow[warmup:])
 
     diagnostics = None
     if return_diagnostics:

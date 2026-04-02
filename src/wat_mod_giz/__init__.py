@@ -2,6 +2,7 @@
 
 from wat_mod_giz.forcing import Forcing
 from wat_mod_giz.outputs import ModelOutput
+from wat_mod_giz.streamflow import StreamflowSeries
 from wat_mod_giz.types import Catchment, PrecipGradientType, Resolution
 
 __all__ = [
@@ -10,6 +11,7 @@ __all__ = [
     "ModelOutput",
     "PrecipGradientType",
     "Resolution",
+    "StreamflowSeries",
 ]
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"

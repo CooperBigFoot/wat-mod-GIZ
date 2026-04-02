@@ -1,6 +1,6 @@
 """Phase 1 contract tests for the shared package surface."""
 
-from wat_mod_giz import Catchment, Forcing, ModelOutput, PrecipGradientType, Resolution
+from wat_mod_giz import Catchment, Forcing, ModelOutput, PrecipGradientType, Resolution, StreamflowSeries
 
 
 class TestPublicPackageSurface:
@@ -13,6 +13,7 @@ class TestPublicPackageSurface:
         assert ModelOutput.__name__ == "ModelOutput"
         assert PrecipGradientType.__name__ == "PrecipGradientType"
         assert Resolution.__name__ == "Resolution"
+        assert StreamflowSeries.__name__ == "StreamflowSeries"
 
     def test_public_exports_include_shared_contract_types(self) -> None:
         """The package __all__ exposes the shared phase-1 contract surface."""
@@ -24,6 +25,7 @@ class TestPublicPackageSurface:
             "ModelOutput",
             "PrecipGradientType",
             "Resolution",
+            "StreamflowSeries",
         ]
 
 
