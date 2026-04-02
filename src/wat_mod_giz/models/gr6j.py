@@ -6,6 +6,8 @@ from dataclasses import dataclass, fields
 
 import numpy as np
 
+from wat_mod_giz.calibration.engine import CalibrationSpec, calibrate_model
+from wat_mod_giz.calibration.types import CalibrationResult, ObjectiveName
 from wat_mod_giz.forcing import Forcing
 from wat_mod_giz.outputs import ModelOutput
 from wat_mod_giz.processes.gr6j import (
@@ -21,6 +23,14 @@ from wat_mod_giz.unit_hydrographs import NH, compute_uh_ordinates, convolve_uh
 B: float = 0.9
 C: float = 0.4
 PARAM_NAMES: tuple[str, ...] = ("x1", "x2", "x3", "x4", "x5", "x6")
+DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
+    "x1": (1.0, 2500.0),
+    "x2": (-5.0, 5.0),
+    "x3": (1.0, 1000.0),
+    "x4": (0.5, 10.0),
+    "x5": (-4.0, 4.0),
+    "x6": (1.0, 50.0),
+}
 STATE_SIZE: int = 63
 
 
@@ -216,10 +226,7 @@ def run(
         state, fluxes = step(state, params, float(precip), float(pet), uh1_ordinates, uh2_ordinates)
         results.append(fluxes)
 
-    arrays = {
-        key: np.array([row[key] for row in results], dtype=np.float64)
-        for key in GR6JFluxes.__dataclass_fields__
-    }
+    arrays = {key: np.array([row[key] for row in results], dtype=np.float64) for key in GR6JFluxes.__dataclass_fields__}
 
     return ModelOutput(
         time=forcing.time,
@@ -229,15 +236,62 @@ def run(
     )
 
 
+def calibrate(
+    *,
+    forcing: Forcing,
+    observed_streamflow: np.ndarray,
+    observed_time: np.ndarray | None = None,
+    bounds: dict[str, tuple[float, float]] | None = None,
+    use_default_bounds: bool = True,
+    objective: ObjectiveName = "nse",
+    initial_state: State | None = None,
+    warmup: int = 365,
+    population_size: int = 50,
+    generations: int = 100,
+    seed: int | None = None,
+    progress: bool = True,
+    return_diagnostics: bool = False,
+    n_workers: int = 1,
+) -> CalibrationResult:
+    """Calibrate GR6J parameters against observed streamflow."""
+    spec = CalibrationSpec(
+        model_name="gr6j",
+        parameter_names=PARAM_NAMES,
+        default_bounds=DEFAULT_BOUNDS,
+        parameters_type=Parameters,
+        run_model=run,
+    )
+    return calibrate_model(
+        spec=spec,
+        forcing=forcing,
+        observed_streamflow=observed_streamflow,
+        observed_time=observed_time,
+        objective=objective,
+        bounds=bounds,
+        use_default_bounds=use_default_bounds,
+        initial_state=initial_state,
+        catchment=None,
+        warmup=warmup,
+        population_size=population_size,
+        generations=generations,
+        seed=seed,
+        progress=progress,
+        return_diagnostics=return_diagnostics,
+        n_workers=n_workers,
+    )
+
+
 __all__ = [
     "B",
     "C",
+    "DEFAULT_BOUNDS",
     "GR6JFluxes",
     "GR6JOutput",
     "PARAM_NAMES",
     "Parameters",
     "STATE_SIZE",
     "State",
+    "calibrate",
     "run",
     "step",
 ]

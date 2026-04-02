@@ -7,6 +7,8 @@ from dataclasses import dataclass, fields
 
 import numpy as np
 
+from wat_mod_giz.calibration.engine import CalibrationSpec, calibrate_model
+from wat_mod_giz.calibration.types import CalibrationResult, ObjectiveName
 from wat_mod_giz.elevation import (
     ELEV_CAP_PRECIP,
     GRAD_P_DEFAULT,
@@ -36,6 +38,16 @@ from wat_mod_giz.unit_hydrographs import compute_uh_ordinates
 STATE_SIZE_BASE: int = 63
 SNOW_LAYER_STATE_SIZE: int = 4
 PARAM_NAMES: tuple[str, ...] = ("x1", "x2", "x3", "x4", "x5", "x6", "ctg", "kf")
+DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
+    "x1": (1.0, 2500.0),
+    "x2": (-5.0, 5.0),
+    "x3": (1.0, 1000.0),
+    "x4": (0.5, 10.0),
+    "x5": (-4.0, 4.0),
+    "x6": (1.0, 50.0),
+    "ctg": (0.0, 1.0),
+    "kf": (0.0, 10.0),
+}
 
 
 def compute_state_size(n_layers: int) -> int:
@@ -289,7 +301,9 @@ def step(
                     gradient=precip_gradient if precip_gradient is not None else GRAD_P_DEFAULT,
                 )
 
-            new_layer_state, layer_fluxes = _single_layer_step(state.snow_layer_states[idx], params, layer_precip, layer_temp)
+            new_layer_state, layer_fluxes = _single_layer_step(
+                state.snow_layer_states[idx], params, layer_precip, layer_temp
+            )
             snow_layer_states[idx] = new_layer_state
             layer_fluxes["layer_temp"] = layer_temp
             layer_fluxes["layer_precip"] = layer_precip
@@ -414,8 +428,7 @@ def run(
         for key in GR6JCemaNeigeFluxes.__dataclass_fields__
     }
     snow_arrays = {
-        key: np.array([row[key] for row in snow_rows], dtype=np.float64)
-        for key in SnowOutput.__dataclass_fields__
+        key: np.array([row[key] for row in snow_rows], dtype=np.float64) for key in SnowOutput.__dataclass_fields__
     }
 
     snow_layers = None
@@ -440,4 +453,63 @@ def run(
     )
 
 
-__all__ = ["GR6JCemaNeigeFluxes", "PARAM_NAMES", "Parameters", "State", "compute_state_size", "run", "step"]
+def calibrate(
+    *,
+    forcing: Forcing,
+    observed_streamflow: np.ndarray,
+    catchment: Catchment,
+    observed_time: np.ndarray | None = None,
+    bounds: dict[str, tuple[float, float]] | None = None,
+    use_default_bounds: bool = True,
+    objective: ObjectiveName = "nse",
+    initial_state: State | None = None,
+    warmup: int = 365,
+    population_size: int = 50,
+    generations: int = 100,
+    seed: int | None = None,
+    progress: bool = True,
+    return_diagnostics: bool = False,
+    n_workers: int = 1,
+) -> CalibrationResult:
+    """Calibrate GR6J+CemaNeige parameters against observed streamflow."""
+    if forcing.temp is None:
+        raise ValueError("Temperature is required for GR6J+CemaNeige calibration")
+
+    spec = CalibrationSpec(
+        model_name="gr6j_cemaneige",
+        parameter_names=PARAM_NAMES,
+        default_bounds=DEFAULT_BOUNDS,
+        parameters_type=Parameters,
+        run_model=run,
+    )
+    return calibrate_model(
+        spec=spec,
+        forcing=forcing,
+        observed_streamflow=observed_streamflow,
+        observed_time=observed_time,
+        objective=objective,
+        bounds=bounds,
+        use_default_bounds=use_default_bounds,
+        initial_state=initial_state,
+        catchment=catchment,
+        warmup=warmup,
+        population_size=population_size,
+        generations=generations,
+        seed=seed,
+        progress=progress,
+        return_diagnostics=return_diagnostics,
+        n_workers=n_workers,
+    )
+
+
+__all__ = [
+    "DEFAULT_BOUNDS",
+    "GR6JCemaNeigeFluxes",
+    "PARAM_NAMES",
+    "Parameters",
+    "State",
+    "calibrate",
+    "compute_state_size",
+    "run",
+    "step",
+]

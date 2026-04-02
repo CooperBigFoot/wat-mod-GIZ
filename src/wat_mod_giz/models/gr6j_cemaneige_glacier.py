@@ -6,6 +6,8 @@ from dataclasses import dataclass, fields
 
 import numpy as np
 
+from wat_mod_giz.calibration.engine import CalibrationSpec, calibrate_model
+from wat_mod_giz.calibration.types import CalibrationResult, ObjectiveName
 from wat_mod_giz.elevation import (
     GRAD_P_DEFAULT,
     GRAD_P_LINEAR_DEFAULT,
@@ -33,6 +35,19 @@ from wat_mod_giz.types import Catchment
 from wat_mod_giz.unit_hydrographs import compute_uh_ordinates
 
 PARAM_NAMES: tuple[str, ...] = ("x1", "x2", "x3", "x4", "x5", "x6", "ctg", "kf", "fi", "tm", "swe_th")
+DEFAULT_BOUNDS: dict[str, tuple[float, float]] = {
+    "x1": (1.0, 2500.0),
+    "x2": (-5.0, 5.0),
+    "x3": (1.0, 1000.0),
+    "x4": (0.5, 10.0),
+    "x5": (-4.0, 4.0),
+    "x6": (1.0, 50.0),
+    "ctg": (0.0, 1.0),
+    "kf": (0.0, 10.0),
+    "fi": (0.0001, 20.0),
+    "tm": (-3.0, 3.0),
+    "swe_th": (0.0001, 50.0),
+}
 STATE_SIZE: int = compute_state_size(1)
 
 
@@ -138,7 +153,9 @@ def _snow_and_glacier_step(
         glacier_fractions = np.zeros(state.n_layers, dtype=np.float64)
 
     if state.n_layers == 1 or layer_elevations is None or layer_fractions is None or input_elevation is None:
-        new_snow_state, snow_fluxes = _single_layer_step(state.snow_layer_states[0], params.to_cemaneige(), precip, temp)
+        new_snow_state, snow_fluxes = _single_layer_step(
+            state.snow_layer_states[0], params.to_cemaneige(), precip, temp
+        )
         glacier_ice_melt = compute_ice_melt(new_snow_state[0], temp, params.fi, params.tm, params.swe_th)
         glacier_melt = compute_layer_glacier_melt(glacier_ice_melt, float(glacier_fractions[0]))
         snow_layer_states = np.array([new_snow_state], dtype=np.float64)
@@ -232,7 +249,9 @@ def step(
         uh2_states=state.uh2_states.copy(),
     )
     liquid_input = snow_fluxes["snow_pliq_and_melt"] + snow_fluxes["glacier_melt"]
-    new_gr6j_state, gr6j_fluxes = gr6j_step(gr6j_state, params.to_gr6j(), liquid_input, pet, uh1_ordinates, uh2_ordinates)
+    new_gr6j_state, gr6j_fluxes = gr6j_step(
+        gr6j_state, params.to_gr6j(), liquid_input, pet, uh1_ordinates, uh2_ordinates
+    )
 
     new_state = State(
         production_store=new_gr6j_state.production_store,
@@ -377,8 +396,7 @@ def run(
         for key in GR6JCemaNeigeGlacierFluxes.__dataclass_fields__
     }
     snow_arrays = {
-        key: np.array([row[key] for row in snow_rows], dtype=np.float64)
-        for key in SnowOutput.__dataclass_fields__
+        key: np.array([row[key] for row in snow_rows], dtype=np.float64) for key in SnowOutput.__dataclass_fields__
     }
 
     snow_layers = None
@@ -403,13 +421,64 @@ def run(
     )
 
 
+def calibrate(
+    *,
+    forcing: Forcing,
+    observed_streamflow: np.ndarray,
+    catchment: Catchment,
+    observed_time: np.ndarray | None = None,
+    bounds: dict[str, tuple[float, float]] | None = None,
+    use_default_bounds: bool = True,
+    objective: ObjectiveName = "nse",
+    initial_state: State | None = None,
+    warmup: int = 365,
+    population_size: int = 50,
+    generations: int = 100,
+    seed: int | None = None,
+    progress: bool = True,
+    return_diagnostics: bool = False,
+    n_workers: int = 1,
+) -> CalibrationResult:
+    """Calibrate GR6J+CemaNeige+glacier parameters against observed streamflow."""
+    if forcing.temp is None:
+        raise ValueError("Temperature is required for GR6J+CemaNeige+glacier calibration")
+
+    spec = CalibrationSpec(
+        model_name="gr6j_cemaneige_glacier",
+        parameter_names=PARAM_NAMES,
+        default_bounds=DEFAULT_BOUNDS,
+        parameters_type=Parameters,
+        run_model=run,
+    )
+    return calibrate_model(
+        spec=spec,
+        forcing=forcing,
+        observed_streamflow=observed_streamflow,
+        observed_time=observed_time,
+        objective=objective,
+        bounds=bounds,
+        use_default_bounds=use_default_bounds,
+        initial_state=initial_state,
+        catchment=catchment,
+        warmup=warmup,
+        population_size=population_size,
+        generations=generations,
+        seed=seed,
+        progress=progress,
+        return_diagnostics=return_diagnostics,
+        n_workers=n_workers,
+    )
+
+
 __all__ = [
+    "DEFAULT_BOUNDS",
     "GR6JCemaNeigeGlacierFluxes",
     "PARAM_NAMES",
     "Parameters",
     "STATE_SIZE",
     "STATE_SIZE_BASE",
     "State",
+    "calibrate",
     "compute_state_size",
     "run",
     "step",

@@ -7,6 +7,7 @@ Current scope:
 - GR6J
 - GR6J + CemaNeige
 - GR6J + CemaNeige + glacier
+- Single-objective calibration via `ctrl-freak`
 
 This repo does not port the Rust/PyO3 backend from `pydrology`. The implementation here is pure Python with explicit process modules, typed inputs, and thin model orchestration.
 
@@ -80,6 +81,25 @@ print(result.fluxes.glacier_melt)
 print(result.snow)
 ```
 
+## Calibration
+
+```python
+from wat_mod_giz.models.gr6j import calibrate
+
+result = calibrate(
+    forcing=forcing,
+    observed_streamflow=observed_streamflow,
+    warmup=365,
+    use_default_bounds=True,
+    objective="nse",
+    seed=42,
+)
+
+print(result.parameters)
+print(result.score)
+print(result.output.streamflow)
+```
+
 ## Development
 
 Install and sync with `uv`:
@@ -110,4 +130,4 @@ uv run ruff format
 
 - Time series are daily.
 - Multi-layer snow and glacier runs use catchment hypsometry plus forcing input elevation.
-- The package is currently focused on direct model execution, not calibration or framework-level abstractions.
+- Calibration is model-local and array-first, with `ctrl-freak` kept behind thin wrappers.
