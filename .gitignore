@@ -16,6 +16,7 @@ Thumbs.db
 # Scratchpad (keep folder, ignore contents)
 scratchpad/*
 !scratchpad/.gitkeep
+!scratchpad/python_basics_course_design.md
 
 .pytest_cache/
 .ruff_cache/
