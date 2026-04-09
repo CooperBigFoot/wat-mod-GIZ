@@ -1,6 +1,6 @@
 [project]
 name = "wat-mod-GIZ"
-version = "0.1.6"
+version = "0.1.7"
 description = "wat-mod-GIZ"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -14,6 +14,7 @@ dependencies = [
     "numpy>=2.4.4",
     "pandas>=3.0.2",
     "rasterio>=1.5.0",
+    "seaborn>=0.13.2",
 ]
 
 
@@ -73,7 +74,7 @@ addopts = ["--strict-markers", "--strict-config", "-ra"]
 # Bump My Version
 # -----------------------
 [tool.bumpversion]
-current_version = "0.1.6"
+current_version = "0.1.7"
 commit = false
 tag = false
 allow_dirty = true
