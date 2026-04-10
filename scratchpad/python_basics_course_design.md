@@ -41,16 +41,21 @@ introducing it all at once.
 ## Planned Topic Sequence
 
 1. basic data structures
-2. functions
-3. basic typing
-4. conditional logic
-5. loops
-6. classes or dataclasses
-7. transition from notebook code to `.py` modules
+2. conditional logic
+3. loops and comprehensions
+4. functions and basic typing
+5. classes or dataclasses
+6. transition from notebook code to `.py` modules
 
 Important teaching decision:
 
-- type annotations begin in notebook 02, not notebook 01
+- notebook 02 focuses on conditional logic
+- notebook 03 focuses on `for` loops first, then list comprehension, with only
+  a light preview of dictionary comprehension
+- notebook 04 introduces functions first, then basic built-in type hints
+- notebook 04 ends with a guided data-cleaning challenge using simple negative
+  bad-data rules
+- classes stay for later notebooks
 
 ## Notebook Format Rule
 
@@ -99,10 +104,103 @@ Notebook 01 does not cover:
 - type annotations
 - real catchment data workflows
 
+## Notebook 02 Decision
+
+- filename: `02_conditional_logic.ipynb`
+- audience: true beginners
+- expected length: one 90-minute lecture
+- focus: comparisons, booleans, and conditional branches
+- libraries: stdlib only
+- exercises: short and interleaved with the teaching cells
+
+Notebook 02 covers:
+
+- boolean results from comparisons
+- `>`
+- `<`
+- `>=`
+- `<=`
+- `==`
+- `if`
+- `elif`
+- `else`
+- the difference between assignment `=` and comparison `==`
+
+Notebook 02 does not cover:
+
+- loops
+- functions
+- classes
+- pandas
+- numpy
+- type annotations
+
+## Notebook 03 Decision
+
+- filename: `03_loops_and_comprehensions.ipynb`
+- audience: true beginners
+- expected length: one 90-minute lecture
+- focus: looping over lists, counting, accumulation, and a first introduction
+  to comprehensions
+- libraries: stdlib only
+- exercises: short and interleaved with the teaching cells
+
+Notebook 03 covers:
+
+- `for` loops over lists
+- running totals
+- counting with `if` inside a loop
+- building a list with `append()`
+- simple list comprehensions
+- a very light introduction to dictionary comprehensions
+
+Notebook 03 does not cover:
+
+- nested loops
+- `while` loops
+- functions
+- classes
+- pandas
+- numpy
+- type annotations
+
+## Notebook 04 Decision
+
+- filename: `04_functions_and_typing.ipynb`
+- audience: true beginners
+- expected length: one 90-minute lecture
+- focus: reusable functions, basic built-in type hints, and a guided
+  multi-function mini-workflow
+- libraries: stdlib only
+- exercises: short and interleaved with the teaching cells
+
+Notebook 04 covers:
+
+- `def`
+- parameters
+- `return`
+- functions with one input and one output
+- functions with two inputs
+- functions with conditionals inside
+- functions with loops inside
+- basic type hints with built-in types such as `float`, `int`,
+  `list[float]`, and `dict[str, float]`
+- a guided challenge that cleans simple bad data and computes precipitation and
+  runoff summaries
+
+Notebook 04 does not cover:
+
+- classes
+- `typing` imports
+- advanced type syntax
+- pandas
+- numpy
+- package-style `.py` modules
+
 ## Open Decisions For Later
 
 - total number of notebooks in the basics block
-- exact scope of notebook 02
+- exact scope of notebook 05
 - when pandas and numpy first appear
 - when the runoff coefficient model is first introduced explicitly
 - when the first package-style `.py` file is introduced
