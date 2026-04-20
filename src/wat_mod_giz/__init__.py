@@ -14,4 +14,4 @@ __all__ = [
     "StreamflowSeries",
 ]
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
