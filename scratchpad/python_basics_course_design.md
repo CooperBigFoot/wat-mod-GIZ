@@ -44,8 +44,9 @@ introducing it all at once.
 2. conditional logic
 3. loops and comprehensions
 4. functions and basic typing
-5. classes or dataclasses
-6. transition from notebook code to `.py` modules
+5. pandas, numpy, matplotlib, and real data tables
+6. classes or dataclasses
+7. transition from notebook code to `.py` modules
 
 Important teaching decision:
 
@@ -197,10 +198,54 @@ Notebook 04 does not cover:
 - numpy
 - package-style `.py` modules
 
+## Notebook 05 Decision
+
+- filename: `05_pandas_numpy_and_gap_filling.ipynb`
+- audience: beginners who have seen functions and basic type hints
+- expected length: one 90-minute lecture
+- focus: reading real basin data, cleaning raw files into a consistent daily
+  schema, seeing missing values, and filling streamflow gaps with a very simple
+  runoff-coefficient model
+- libraries: `pandas`, `numpy`, and a small amount of `matplotlib`
+- exercises: short and interleaved, with a larger final basin exercise
+
+Notebook 05 covers:
+
+- reading CSV files into pandas DataFrames
+- inspecting `shape`, `columns`, and `dtypes`
+- `np.nan` as a missing numeric value
+- converting text dates with `pd.to_datetime(...)`
+- building a simple schema with `date`, `precipitation_mm`, `q_m3s`, and `q_mm`
+- left joins that preserve daily precipitation rows and expose missing
+  streamflow as `NaN`
+- converting `q_m3s` to `q_mm`
+- simple missing-data inspection with `isna().sum()`
+- basic `matplotlib` plots to see gaps and compare original and filled values
+- cleaning a full Ala-Archa daily dataset from raw precipitation and streamflow
+  files
+- a very simple runoff-coefficient model built from valid wet days
+- gap filling across the full Ala-Archa cleaned dataset
+- a final repeat exercise on the full Alamedin cleaned dataset
+
+Notebook 05 does not cover:
+
+- advanced pandas indexing or grouping
+- resampling
+- interpolation methods
+- classes
+- package-style `.py` modules
+
+Important teaching decision:
+
+- use actual local basin data under `~/Desktop/2025_02_TW_ETHZ_CA_IWRM/02_data`
+- teach the main cleaning and gap-filling workflow on the full Ala-Archa daily
+  dataset
+- use Alamedin for the final challenge so students repeat the same pattern on a
+  second full dataset
+- treat `notebooks/data_preparation.ipynb` as unrelated draft material, not as
+  part of the basics sequence
+
 ## Open Decisions For Later
 
 - total number of notebooks in the basics block
-- exact scope of notebook 05
-- when pandas and numpy first appear
-- when the runoff coefficient model is first introduced explicitly
 - when the first package-style `.py` file is introduced
