@@ -237,7 +237,7 @@ Notebook 05 does not cover:
 
 Important teaching decision:
 
-- use actual local basin data under `~/Desktop/2025_02_TW_ETHZ_CA_IWRM/02_data`
+- use actual repo-local basin data under `data/02_data`
 - teach the main cleaning and gap-filling workflow on the full Ala-Archa daily
   dataset
 - use Alamedin for the final challenge so students repeat the same pattern on a
