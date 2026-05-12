@@ -1510,10 +1510,10 @@ wheels = [
 
 [[package]]
 name = "pyshed"
-version = "0.1.2"
+version = "0.1.11"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/fe/3c2aef54b4973031bb2460e7e581f1a429afd6da945ee8e6d7bb232f3b87/pyshed-0.1.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:3ffaf13653e8e71f16e0a15a0f678726527dfd86400ca7f01de351b9648f6148", size = 18884806, upload-time = "2026-04-18T19:26:37.577Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/dc/9ee37eb07ec337481ee934ab599d420bbfb866ec8e28ce45f1a1e3ec97f6/pyshed-0.1.11-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:d1bf1ce448a3143b898698350b05b6cfd7fe4b063efee8b4300dba7ebb867e2e", size = 6154609, upload-time = "2026-05-06T21:05:38.31Z" },
 ]
 
 [[package]]
@@ -1975,7 +1975,7 @@ wheels = [
 
 [[package]]
 name = "wat-mod-giz"
-version = "0.1.15"
+version = "0.1.16"
 source = { editable = "." }
 dependencies = [
     { name = "ctrl-freak" },
