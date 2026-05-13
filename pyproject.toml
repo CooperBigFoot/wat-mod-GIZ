@@ -1,6 +1,6 @@
 [project]
 name = "wat-mod-GIZ"
-version = "0.1.17"
+version = "0.1.18"
 description = "wat-mod-GIZ"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -76,7 +76,7 @@ addopts = ["--strict-markers", "--strict-config", "-ra"]
 # Bump My Version
 # -----------------------
 [tool.bumpversion]
-current_version = "0.1.17"
+current_version = "0.1.18"
 commit = false
 tag = false
 allow_dirty = true
@@ -92,5 +92,4 @@ search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
 
 [tool.uv.sources]
-ctrl-freak = { path = "../ctrl-freak" }
-# ctrl-freak = { git = "https://github.com/hydrosolutions/ctrl-freak.git", rev = "main" } # example of how to add a git dependency
+ctrl-freak = { git = "https://github.com/hydrosolutions/ctrl-freak.git", rev = "main" }
